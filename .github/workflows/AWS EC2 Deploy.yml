@@ -1,0 +1,51 @@
+name: AWS EC2 Deploy
+
+# Manual trigger only, no auto push deployment
+on:
+  workflow_dispatch:
+    inputs:
+      env_content:
+        description: 'Paste the full content of your .env file here'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH Access
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_KEY }}
+
+      - name: Deploy & Server Setup
+        run: |
+          # 1. Install Docker automatically if not present
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            if ! command -v docker &> /dev/null; then
+              sudo apt update -y
+              sudo apt install docker.io docker-compose -y
+              sudo systemctl enable --now docker
+              sudo usermod -aG docker $USER
+              newgrp docker
+            fi
+            mkdir -p ~/chatbox_gp
+            cd ~/chatbox_gp
+            git pull origin main
+          EOF
+
+          # 2. Write custom .env file from manual input
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat > ~/chatbox_gp/.env" << 'INPUT_EOF'
+          ${{ github.event.inputs.env_content }}
+          INPUT_EOF
+
+          # 3. Rebuild and restart containers
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/chatbox_gp
+            docker compose down
+            docker compose up -d --build
+            docker compose ps
+          EOF
