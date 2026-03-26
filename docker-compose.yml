@@ -1,4 +1,5 @@
-mongodb:
+services:
+  mongodb:
     image: mongo:7
     container_name: mongodb
     restart: unless-stopped
@@ -10,7 +11,6 @@ mongodb:
     ports:
       - "27017:27017"
     command: mongod --auth
-
 
   backend-1:
     build:
@@ -64,15 +64,12 @@ mongodb:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - MONGODB_URI=mongodb://mongodb:27017/chatdb
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/chatdb?authSource=admin
       - BACKEND_URL_TEMPLATE=http://backend-{id}:8000
       - BACKEND_DISCOVERY_START_ID=1
       - BACKEND_DISCOVERY_LIMIT=20
     depends_on:
       - mongodb
-      - backend-1
-      - backend-2
-      - backend-3
 
 volumes:
   mongo_data:
