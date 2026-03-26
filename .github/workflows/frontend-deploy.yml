@@ -1,0 +1,67 @@
+name: AWS EC2 Deploy (Frontend)
+
+on:
+  workflow_dispatch:
+    inputs:
+      TELEGRAM_BOT_TOKEN:
+        description: "Telegram Bot token"
+        required: true
+        type: string
+      MONGO_ROOT_USERNAME:
+        description: "MongoDB root username"
+        required: true
+        type: string
+      MONGO_ROOT_PASSWORD:
+        description: "MongoDB root password"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy Frontend to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_KEY }}
+
+      - name: Deploy frontend via SSH
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ inputs.TELEGRAM_BOT_TOKEN }}
+          MONGO_ROOT_USERNAME: ${{ inputs.MONGO_ROOT_USERNAME }}
+          MONGO_ROOT_PASSWORD: ${{ inputs.MONGO_ROOT_PASSWORD }}
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+          REPO_DIR=~/comp_7940_gp
+
+          if [ ! -d "$REPO_DIR" ]; then
+            git clone https://github.com/a757814283/comp_7940_gp "$REPO_DIR"
+          fi
+
+          cd "$REPO_DIR"
+          git pull origin main
+
+          mkdir -p frontend
+
+          cat > frontend/.env << 'EOT'
+          TELEGRAM_BOT_TOKEN=${{ inputs.TELEGRAM_BOT_TOKEN }}
+          MONGO_ROOT_USERNAME=${{ inputs.MONGO_ROOT_USERNAME }}
+          MONGO_ROOT_PASSWORD=${{ inputs.MONGO_ROOT_PASSWORD }}
+          EOT
+
+          # Ensure the shared docker network exists (frontend uses external network `gp-net`)
+          docker network create gp-net >/dev/null 2>&1 || true
+
+          # Start (or restart) frontend stack
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            docker compose -f frontend/docker-compose.yml up -d --build
+          else
+            docker-compose -f frontend/docker-compose.yml up -d --build
+          fi
+          EOF
