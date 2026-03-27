@@ -105,7 +105,7 @@ jobs:
           # Ensure shared network exists for frontend/backend communication.
           docker network create gp-net >/dev/null 2>&1 || true
           
-          docker-compose -f frontend/docker-compose.yml down -v
+          docker-compose -f "backend/deploy/${SERVICE_NAME}.yml" down -v
           
           # Deploy only this backend id; other backend ids are untouched.
           docker-compose -f "backend/deploy/${SERVICE_NAME}.yml" up -d --build
