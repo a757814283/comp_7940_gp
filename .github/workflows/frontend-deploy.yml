@@ -45,7 +45,10 @@ jobs:
           fi
 
           cd "$REPO_DIR"
-          git pull
+          git fetch --all
+          git checkout -B main origin/main
+          git reset --hard origin/main
+          git clean -fd
 
           mkdir -p frontend
 
