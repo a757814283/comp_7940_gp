@@ -45,7 +45,7 @@ jobs:
           fi
 
           cd "$REPO_DIR"
-          git pull origin main
+          git pull
 
           mkdir -p frontend
 
