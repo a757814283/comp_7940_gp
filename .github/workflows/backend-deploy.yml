@@ -1,0 +1,111 @@
+name: AWS EC2 Deploy (Backend by ID)
+
+on:
+  workflow_dispatch:
+    inputs:
+      BACKEND_ID:
+        description: "Backend id x (deploys backend-x on port 800x)"
+        required: true
+        type: string
+      API_KEY:
+        description: "API_KEY for this backend"
+        required: true
+        type: string
+      BASE_URL:
+        description: "BASE_URL for this backend"
+        required: true
+        type: string
+      API_VER:
+        description: "API_VER for this backend (use 'none' for OpenAI-compatible)"
+        required: true
+        type: string
+      MODEL:
+        description: "MODEL for this backend"
+        required: true
+        type: string
+      LLM_NAME:
+        description: "LLM_NAME shown in answers"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy backend-x to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_KEY }}
+
+      - name: Deploy backend by id via SSH
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+
+          REPO_DIR=~/comp_7940_gp
+          BACKEND_ID="${{ inputs.BACKEND_ID }}"
+          API_KEY="${{ inputs.API_KEY }}"
+          BASE_URL="${{ inputs.BASE_URL }}"
+          API_VER="${{ inputs.API_VER }}"
+          MODEL="${{ inputs.MODEL }}"
+          LLM_NAME="${{ inputs.LLM_NAME }}"
+
+          # Validate id (positive integer) and avoid invalid port names.
+          if ! [[ "$BACKEND_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid BACKEND_ID: $BACKEND_ID (must be positive integer)"
+            exit 1
+          fi
+
+          HOST_PORT="800${BACKEND_ID}"
+          SERVICE_NAME="backend-${BACKEND_ID}"
+          CONTAINER_NAME="backend-${BACKEND_ID}"
+
+          if [ ! -d "$REPO_DIR" ]; then
+            git clone https://github.com/a757814283/comp_7940_gp "$REPO_DIR"
+          fi
+
+          cd "$REPO_DIR"
+          git fetch --all
+          git checkout -B main origin/main
+          git reset --hard origin/main
+          git clean -fd
+
+          mkdir -p backend/deploy
+
+          cat > "backend/deploy/${SERVICE_NAME}.yml" << EOT
+          services:
+            ${SERVICE_NAME}:
+              build:
+                context: ../llm-backend
+              container_name: ${CONTAINER_NAME}
+              restart: unless-stopped
+              environment:
+                - API_KEY=${API_KEY}
+                - BASE_URL=${BASE_URL}
+                - API_VER=${API_VER}
+                - MODEL=${MODEL}
+                - LLM_NAME=${LLM_NAME}
+                - PORT=8000
+              ports:
+                - "${HOST_PORT}:8000"
+              networks:
+                - gp-net
+
+          networks:
+            gp-net:
+              external: true
+              name: gp-net
+          EOT
+
+          # Ensure shared network exists for frontend/backend communication.
+          docker network create gp-net >/dev/null 2>&1 || true
+
+          # Deploy only this backend id; other backend ids are untouched.
+          docker-compose -f "backend/deploy/${SERVICE_NAME}.yml" up -d --build
+
+          EOF
