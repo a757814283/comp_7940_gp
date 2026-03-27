@@ -61,12 +61,8 @@ jobs:
           # Ensure the shared docker network exists (frontend uses external network `gp-net`)
           docker network create gp-net >/dev/null 2>&1 || true
           
-          docker-compose down -v
+          docker-compose -f frontend/docker-compose.yml down -v
           
-          # Start (or restart) frontend stack
-          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-            docker compose -f frontend/docker-compose.yml up -d --build
-          else
-            docker-compose -f frontend/docker-compose.yml up -d --build
-          fi
+          docker-compose -f frontend/docker-compose.yml up -d --build
+
           EOF
