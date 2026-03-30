@@ -88,8 +88,9 @@ jobs:
           fi
           
           # Add current user to docker group to avoid permission issues
-          # sudo usermod -aG docker $USER
-          # newgrp docker || true
+          sudo usermod -aG docker $USER
+          exec newgrp docker << EOF
+          EOF
           # ==============================================================================================
 
           if [ ! -d "$REPO_DIR" ]; then
