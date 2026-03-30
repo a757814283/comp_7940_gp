@@ -1,1 +1,1 @@
-# comp_7940_gp
+# COMP 7940 Group Project
