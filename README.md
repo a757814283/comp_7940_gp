@@ -85,10 +85,10 @@ Telegram Frontend Commands
 
 # Project Structure
 
-comp_7940_gp/
-├── .github/workflows/    # CI/CD automation scripts (e.g., frontend-deploy.yml)
-├── backend/
-│   └── llm-backend/      # LLM backend service (multiple containers supported)
-├── frontend/             # Telegram frontend (independent of backend)
-├── Dockerfile            # Containerization configuration
-└── README.md             # Project documentation
+- `comp_7940_gp/`
+  - `.github/workflows/` - CI/CD automation scripts (e.g., frontend-deploy.yml)
+  - `backend/`
+    - `llm-backend/` - LLM backend service (multiple containers supported)
+  - `frontend/` - Telegram frontend (independent of backend)
+  - `Dockerfile` - Containerization configuration
+  - `README.md` - Project documentation
