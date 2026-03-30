@@ -65,16 +65,15 @@ jobs:
             echo "docker-compose is already installed, skip installation."
           fi
 
-          sudo mkdir -p /usr/local/libexec/docker/cli-plugins
           sudo mkdir -p /usr/libexec/docker/cli-plugins
+          sudo mkdir -p /root/.docker/cli-plugins
           
-          if [ ! -f /usr/libexec/docker/cli-plugins/docker-buildx ]; then
-              BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name": "\K[^"]+')
-              sudo curl -Lo /usr/libexec/docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
-              sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
-          fi
+          BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          sudo curl -Lo /usr/libexec/docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+          sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
           
-          sudo usermod -aG docker $USER
+          sudo cp -f /usr/libexec/docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
+          sudo chmod +x /root/.docker/cli-plugins/docker-buildx
           
           sudo systemctl restart docker
         
