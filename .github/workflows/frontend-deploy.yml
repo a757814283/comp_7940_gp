@@ -61,6 +61,15 @@ jobs:
           else
             echo "docker-compose is already installed, skip installation."
           fi
+
+          # Check current version
+          docker buildx version
+          
+          # Download and install latest buildx
+          BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          mkdir -p ~/.docker/cli-plugins
+          curl -Lo ~/.docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+          chmod +x ~/.docker/cli-plugins/docker-buildx
           
           # Add current user to docker group to avoid permission issues
           # sudo usermod -aG docker $USER
