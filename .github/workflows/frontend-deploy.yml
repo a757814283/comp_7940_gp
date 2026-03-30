@@ -53,8 +53,14 @@ jobs:
           sudo systemctl start docker
           
           # Install latest docker-compose if not installed
-          sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
+          echo "=== Checking docker-compose installation ==="
+          if ! command -v docker-compose &> /dev/null; then
+            echo "docker-compose not found, installing..."
+            sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          else
+            echo "docker-compose is already installed, skip installation."
+          fi
           
           # Add current user to docker group to avoid permission issues
           # sudo usermod -aG docker $USER
