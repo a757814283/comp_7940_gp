@@ -51,6 +51,11 @@ jobs:
           sudo dnf install -y docker || sudo yum install -y docker
           sudo systemctl enable docker
           sudo systemctl start docker
+
+          # FIX PERMISSION
+          sudo usermod -aG docker $USER
+          newgrp docker
+
           
           # Install latest docker-compose if not installed
           echo "=== Checking docker-compose installation ==="
@@ -86,11 +91,7 @@ jobs:
             sudo chmod +x ~/.docker/cli-plugins/docker-buildx
             echo "buildx updated to $BUILDX_VERSION successfully."
           fi
-          
-          # Add current user to docker group to avoid permission issues
-          sudo usermod -aG docker $USER
-          exec newgrp docker << EOF
-          EOF
+        
           # ==============================================================================================
 
           if [ ! -d "$REPO_DIR" ]; then
