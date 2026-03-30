@@ -54,8 +54,6 @@ jobs:
 
           # FIX PERMISSION
           sudo usermod -aG docker $USER
-          newgrp docker
-
           
           # Install latest docker-compose if not installed
           echo "=== Checking docker-compose installation ==="
@@ -113,10 +111,10 @@ jobs:
           EOT
 
           # Ensure the shared docker network exists (frontend uses external network `gp-net`)
-          docker network create gp-net >/dev/null 2>&1 || true
+          sudo docker network create gp-net >/dev/null 2>&1 || true
           
-          docker-compose -f frontend/docker-compose.yml down -v
+          sudo docker-compose -f frontend/docker-compose.yml down -v
           
-          docker-compose -f frontend/docker-compose.yml up -d --build
+          sudo docker-compose -f frontend/docker-compose.yml up -d --build
 
           EOF
