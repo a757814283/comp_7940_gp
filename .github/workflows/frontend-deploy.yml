@@ -62,14 +62,30 @@ jobs:
             echo "docker-compose is already installed, skip installation."
           fi
 
-          # Check current version
-          docker buildx version
+          # Check and install buildx if version < 0.17.0
+          echo "=== Checking buildx version ==="
+          if command -v docker-buildx &>/dev/null || docker buildx version &>/dev/null; then
+            CURRENT_VERSION=$(docker buildx version 2>/dev/null | grep -oP 'v?\K[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+            REQUIRED="0.17.0"
+            if [ "$(printf '%s\n' "$REQUIRED" "$CURRENT_VERSION" | sort -V | head -n1)" != "$REQUIRED" ]; then
+              echo "buildx version $CURRENT_VERSION is too old, updating to latest..."
+              UPDATE_BUILDX=true
+            else
+              echo "buildx version $CURRENT_VERSION is up to date."
+              UPDATE_BUILDX=false
+            fi
+          else
+            echo "buildx not found, installing latest..."
+            UPDATE_BUILDX=true
+          fi
           
-          # Download and install latest buildx
-          BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name": "\K[^"]+')
-          mkdir -p ~/.docker/cli-plugins
-          curl -Lo ~/.docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
-          chmod +x ~/.docker/cli-plugins/docker-buildx
+          if [ "$UPDATE_BUILDX" = "true" ]; then
+            BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+            mkdir -p ~/.docker/cli-plugins
+            sudo curl -Lo ~/.docker/cli-plugins/docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+            sudo chmod +x ~/.docker/cli-plugins/docker-buildx
+            echo "buildx updated to $BUILDX_VERSION successfully."
+          fi
           
           # Add current user to docker group to avoid permission issues
           # sudo usermod -aG docker $USER
